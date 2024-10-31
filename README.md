@@ -45,3 +45,18 @@ Glow Hockey is a dynamic, visually stunning two-player hockey-style game built w
 - Score by getting the ball into the opponent's goal
 - Collect power-ups for special advantages!
 
+
+## Game Mechanics
+- Ball speed increases with each paddle hit
+- Bounces have slight randomness for unpredictability
+- Goal scoring resets ball position
+
+## Screenshot
+??
+
+## Contributing
+Contributions are welcome! Please feel free to submit a Pull Request.
+
+## Acknowledgments
+- Pygame Community
+- Pixel art and game design inspiration
