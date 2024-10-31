@@ -30,4 +30,18 @@ Glow Hockey is a dynamic, visually stunning two-player hockey-style game built w
 3. 
 
 
-  
+## How to Play
+
+### Player 1 Controls
+- **Vertical Movement**: W (Up), S (Down)
+- **Horizontal Movement**: A (Left), D (Right)
+
+### Player 2 Controls
+- **Vertical Movement**: Up Arrow, Down Arrow
+- **Horizontal Movement**: Left Arrow, Right Arrow
+
+### Gameplay
+- Navigate your paddle to hit the ball
+- Score by getting the ball into the opponent's goal
+- Collect power-ups for special advantages!
+
