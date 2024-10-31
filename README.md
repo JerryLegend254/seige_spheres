@@ -10,3 +10,24 @@ Glow Hockey is a dynamic, visually stunning two-player hockey-style game built w
 - 🎲 Dynamic power-ups
 - 🔥 Particle collision effects
 - 🚀 Adaptive ball speed
+
+
+## Prerequisites
+- Python 3.7+
+- Pygame library
+
+## Installation
+
+1. Clone the repository:
+   ```bash
+   git clone https://github.com/JerryLegend254/seige_spheres/.git
+   cd seige_spheres
+   ```
+2. Install requirements (pygame included):
+   ```bash
+   pip install -r requirements.txt
+   ```
+3. 
+
+
+  
