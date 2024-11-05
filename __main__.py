@@ -1,9 +1,21 @@
 import pygame
 import random
 import math
+import pygame.mixer
+import os
 
 # Initialize Pygame
 pygame.init()
+pygame.mixer.init()
+
+#Audio folder path
+Game_audio=os.path.join("seige_spheres","Game_audio")
+
+#Game sounds
+paddle_collision=pygame.mixer.Sound(os.path.join(Game_audio,"collision_sound.wav"))
+game_music=pygame.mixer.Sound(os.path.join(Game_audio,"game_music.mp3"))
+goal_sound=pygame.mixer.Sound(os.path.join(Game_audio,"goal_sound.mp3"))
+powerup_sound=pygame.mixer.Sound(os.path.join(Game_audio,"powerup_sound.mp3"))
 
 # Constants
 WINDOW_WIDTH = 800
@@ -381,6 +393,7 @@ class Game:
         self.screen = pygame.display.set_mode((WINDOW_WIDTH, WINDOW_HEIGHT))
         pygame.display.set_caption("Glow Hockey")
         self.clock = pygame.time.Clock()
+        game_music.play()
 
         # Create surfaces for boundary glow effects
         self.boundary_surface = pygame.Surface((WINDOW_WIDTH, WINDOW_HEIGHT), pygame.SRCALPHA)
@@ -452,6 +465,7 @@ class Game:
 
     def check_collision(self, ball, player):
         current_time = pygame.time.get_ticks()
+        
 
         # Check collision cooldown
         if current_time - ball.last_collision_time < ball.collision_cooldown:
@@ -462,6 +476,8 @@ class Game:
         distance = math.sqrt(dx * dx + dy * dy)
 
         if distance < ball.radius + player.radius:
+            paddle_collision.play()
+
             # Create particles at collision point
             collision_x = player.x + (dx * player.radius / distance)
             collision_y = player.y + (dy * player.radius / distance)
@@ -528,6 +544,7 @@ class Game:
                 distance = math.sqrt(dx * dx + dy * dy)
 
                 if distance < player.radius + powerup.radius:
+                    powerup_sound.play()
                     if powerup.type == 'multi_ball':
                         self.spawn_ball(player.side)
                     elif powerup.type == 'ball_speed':
@@ -612,6 +629,7 @@ class Game:
                 self.should_respawn = True
                 self.respawn_side = 'left'
                 self.goal_animations.append(GoalAnimation(WINDOW_WIDTH//2, WINDOW_HEIGHT//2))
+                goal_sound.play()
 
             # Right goal
             elif ball.x + ball.radius >= WINDOW_WIDTH and goal_top <= ball.y <= goal_bottom:
@@ -622,6 +640,7 @@ class Game:
                 self.should_respawn = True
                 self.respawn_side = 'right'
                 self.goal_animations.append(GoalAnimation(WINDOW_WIDTH//2, WINDOW_HEIGHT//2))
+                goal_sound.play()
 
     def draw(self):
         self.screen.fill(BLACK)
