@@ -9,7 +9,7 @@ pygame.init()
 pygame.mixer.init()
 
 #Audio folder path
-Game_audio=os.path.join("seige_spheres","Game_audio")
+Game_audio = os.path.join(os.path.dirname("seige_spheres"), "Game_audio")
 
 #Game sounds
 paddle_collision=pygame.mixer.Sound(os.path.join(Game_audio,"collision_sound.wav"))
