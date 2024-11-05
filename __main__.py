@@ -8,7 +8,7 @@ pygame.init()
 # Constants
 WINDOW_WIDTH = 800
 WINDOW_HEIGHT = 600
-PADDLE_RADIUS = 25
+PADDLE_RADIUS = 32
 BALL_RADIUS = 15
 WALL_THICKNESS = 8
 CHARACTER_SIZE = 30
@@ -23,7 +23,8 @@ POWERUP_SIZE = 20
 POWERUP_DURATION = 5000
 POWERUP_SPAWN_INTERVAL = 10000
 POWERUP_SPAWN_CHANCE = 0.7
-
+glow_radius=30,
+corner_radius=40
 
 # Colors with alpha for glow effects
 WHITE = (255, 255, 255)
@@ -34,6 +35,8 @@ YELLOW = (255, 255, 0)
 BLUE = (0, 0, 255)
 PURPLE = (255, 0, 255)
 ORANGE = (255, 165, 0)
+DARK_GREEN = (0, 128, 0)
+DARK_RED = (128, 0, 0)
 
 
 # Ball Class
@@ -129,9 +132,26 @@ class Player:
         self.glow_surface = pygame.Surface((self.glow_radius * 2, self.glow_radius * 2), pygame.SRCALPHA)
         self.base_surface = pygame.Surface((PADDLE_RADIUS * 2, PADDLE_RADIUS * 2), pygame.SRCALPHA)
 
-        # Draw the base paddle
-        pygame.draw.circle(self.base_surface, self.color, (PADDLE_RADIUS, PADDLE_RADIUS), PADDLE_RADIUS)
+        # Color scheme based on side
+        self.color_scheme = (GREEN, DARK_GREEN, GREEN) if side == 'left' else (RED, DARK_RED, RED)
+        
+        # Create a surface for the paddle with transparency
+        self.paddle_surface = pygame.Surface((PADDLE_RADIUS * 2, PADDLE_RADIUS * 2), pygame.SRCALPHA)
 
+        # Draw outer layer
+        outer_color, main_color, inner_color = self.color_scheme
+        pygame.draw.circle(self.paddle_surface, outer_color, (PADDLE_RADIUS, PADDLE_RADIUS), PADDLE_RADIUS)
+
+        # Draw main layer (inner circle for 3D effect)
+        main_radius = int(PADDLE_RADIUS * 0.8)
+        pygame.draw.circle(self.paddle_surface, main_color, (PADDLE_RADIUS, PADDLE_RADIUS), main_radius)
+
+        # Draw highlight for 3D effect
+        highlight_radius = int(PADDLE_RADIUS * 0.5)
+        highlight_offset_y = int(PADDLE_RADIUS * 0.05)
+        pygame.draw.circle(self.paddle_surface, inner_color, (PADDLE_RADIUS, PADDLE_RADIUS - highlight_offset_y), highlight_radius)
+
+        
         # Create glow effect
         for i in range(10):
             alpha = 100 - i * 10
@@ -190,12 +210,15 @@ class Player:
                    (self.x - self.glow_radius, self.y - self.glow_radius))
         screen.blit(self.base_surface,
                    (self.x - self.radius, self.y - self.radius))
+        
+        screen.blit(self.paddle_surface, (self.x - PADDLE_RADIUS, self.y - PADDLE_RADIUS))
 
         # Draw score
         font = pygame.font.Font(None, 36)
         score_text = font.render(str(self.score), True, WHITE)
         score_x = 50 if self.side == 'left' else WINDOW_WIDTH - 70
         screen.blit(score_text, (score_x, 30))
+
 
 
     def apply_powerup(self, powerup_type):
@@ -618,12 +641,24 @@ class Game:
         self.screen.blit(self.boundary_surface, (0, 0))
 
         # Draw center line
-        pygame.draw.line(self.screen, (*WHITE, 50),
-                        (WINDOW_WIDTH//2, 0),
-                        (WINDOW_WIDTH//2, WINDOW_HEIGHT), 2)
-        pygame.draw.circle(self.screen, (*WHITE, 50),
-                         (WINDOW_WIDTH//2, WINDOW_HEIGHT//2), 50, 2)
+        pygame.draw.line(self.screen, (*WHITE,50), (WINDOW_WIDTH // 2, 0), (WINDOW_WIDTH // 2, WINDOW_HEIGHT), 2)
 
+    # Draw center circle
+        pygame.draw.circle(self.screen, (*WHITE,50), (WINDOW_WIDTH // 2, WINDOW_HEIGHT // 2), 50, 2)
+
+    # Goal areas - semi-circles for each side
+        goal_radius = 100  # Customize the radius as needed for the goal area semi-circles
+    
+    # Left goal semi-circle
+        pygame.draw.arc(self.screen, (*WHITE,50), 
+                        (-100, WINDOW_HEIGHT // 2 - goal_radius, goal_radius * 2, goal_radius * 2),
+                        4.71, 1.57, 2)  # Arc from bottom to top on left side
+
+    # Right goal semi-circle
+        pygame.draw.arc(self.screen, (*WHITE,50), 
+                    (WINDOW_WIDTH - goal_radius, WINDOW_HEIGHT // 2 - goal_radius, goal_radius * 2, goal_radius * 2),
+                    1.57, 4.71, 2)  # Arc from top to bottom on right side
+        # Draw players
         self.player1.draw(self.screen)
         self.player2.draw(self.screen)
 
