@@ -8,14 +8,14 @@ import os
 pygame.init()
 pygame.mixer.init()
 
-#Audio folder path
+# Audio folder path
 Game_audio = os.path.join(os.path.dirname("seige_spheres"), "Game_audio")
 
-#Game sounds
-paddle_collision=pygame.mixer.Sound(os.path.join(Game_audio,"collision_sound.wav"))
-game_music=pygame.mixer.Sound(os.path.join(Game_audio,"game_music.mp3"))
-goal_sound=pygame.mixer.Sound(os.path.join(Game_audio,"goal_sound.mp3"))
-powerup_sound=pygame.mixer.Sound(os.path.join(Game_audio,"powerup_sound.mp3"))
+# Game sounds
+paddle_collision = pygame.mixer.Sound(os.path.join(Game_audio, "collision_sound.wav"))
+game_music = pygame.mixer.Sound(os.path.join(Game_audio, "game_music.mp3"))
+goal_sound = pygame.mixer.Sound(os.path.join(Game_audio, "goal_sound.mp3"))
+powerup_sound = pygame.mixer.Sound(os.path.join(Game_audio, "powerup_sound.mp3"))
 
 # Constants
 WINDOW_WIDTH = 800
@@ -35,8 +35,10 @@ POWERUP_SIZE = 20
 POWERUP_DURATION = 5000
 POWERUP_SPAWN_INTERVAL = 10000
 POWERUP_SPAWN_CHANCE = 0.7
-glow_radius=30,
-corner_radius=40
+glow_radius = 30,
+corner_radius = 40
+POWERUP_LIFETIME = 5000
+MENU_BG_COLOR = (20, 20, 40)
 
 # Colors with alpha for glow effects
 WHITE = (255, 255, 255)
@@ -51,6 +53,35 @@ DARK_GREEN = (0, 128, 0)
 DARK_RED = (128, 0, 0)
 
 
+class MenuScreen:
+    def __init__(self, screen):
+        self.screen = screen
+        self.font_large = pygame.font.Font(None, 74)
+        self.font_small = pygame.font.Font(None, 36)
+        self.selected_option = 0
+        self.options = ['Start Game', 'Exit']
+
+    def draw(self):
+        self.screen.fill(MENU_BG_COLOR)
+
+        # Draw title
+        title = self.font_large.render('Glow Hockey', True, WHITE)
+        title_rect = title.get_rect(center=(WINDOW_WIDTH // 2, WINDOW_HEIGHT // 4))
+        self.screen.blit(title, title_rect)
+
+        # Draw options
+        for i, option in enumerate(self.options):
+            color = YELLOW if i == self.selected_option else WHITE
+            text = self.font_small.render(option, True, color)
+            rect = text.get_rect(center=(WINDOW_WIDTH // 2, WINDOW_HEIGHT // 2 + i * 50))
+            self.screen.blit(text, rect)
+
+        # Draw instructions
+        instructions = self.font_small.render('Use UP/DOWN arrows and ENTER to select', True, WHITE)
+        inst_rect = instructions.get_rect(center=(WINDOW_WIDTH // 2, WINDOW_HEIGHT * 3 // 4))
+        self.screen.blit(instructions, inst_rect)
+
+        pygame.display.flip()
 # Ball Class
 class Ball:
     def __init__(self, x: float, y: float, radius: float, dx: float, dy: float):
@@ -72,7 +103,7 @@ class Ball:
             alpha = 100 - i * 10
             size = self.radius + i * 2
             pygame.draw.circle(self.glow_surface, (*WHITE, alpha),
-                             (self.glow_radius, self.glow_radius), size)
+                               (self.glow_radius, self.glow_radius), size)
 
     def update(self):
         if not self.active:
@@ -82,8 +113,8 @@ class Ball:
         next_y = self.y + self.dy * self.speed
 
         # Check for collisions with walls (excluding goal areas)
-        goal_top = WINDOW_HEIGHT//2 - GOAL_WIDTH//2
-        goal_bottom = WINDOW_HEIGHT//2 + GOAL_WIDTH//2
+        goal_top = WINDOW_HEIGHT // 2 - GOAL_WIDTH // 2
+        goal_bottom = WINDOW_HEIGHT // 2 + GOAL_WIDTH // 2
 
         # Add small buffer to prevent sticking
         buffer = 2
@@ -121,10 +152,11 @@ class Ball:
     def draw(self, screen):
         # Draw glow
         screen.blit(self.glow_surface,
-                   (self.x - self.glow_radius, self.y - self.glow_radius))
+                    (self.x - self.glow_radius, self.y - self.glow_radius))
         # Draw base ball
         screen.blit(self.base_surface,
-                   (self.x - self.radius, self.y - self.radius))
+                    (self.x - self.radius, self.y - self.radius))
+
 
 class Player:
     def __init__(self, x: int, side: str):
@@ -146,7 +178,7 @@ class Player:
 
         # Color scheme based on side
         self.color_scheme = (GREEN, DARK_GREEN, GREEN) if side == 'left' else (RED, DARK_RED, RED)
-        
+
         # Create a surface for the paddle with transparency
         self.paddle_surface = pygame.Surface((PADDLE_RADIUS * 2, PADDLE_RADIUS * 2), pygame.SRCALPHA)
 
@@ -161,16 +193,15 @@ class Player:
         # Draw highlight for 3D effect
         highlight_radius = int(PADDLE_RADIUS * 0.5)
         highlight_offset_y = int(PADDLE_RADIUS * 0.05)
-        pygame.draw.circle(self.paddle_surface, inner_color, (PADDLE_RADIUS, PADDLE_RADIUS - highlight_offset_y), highlight_radius)
+        pygame.draw.circle(self.paddle_surface, inner_color, (PADDLE_RADIUS, PADDLE_RADIUS - highlight_offset_y),
+                           highlight_radius)
 
-        
         # Create glow effect
         for i in range(10):
             alpha = 100 - i * 10
             size = self.radius + i * 2
             pygame.draw.circle(self.glow_surface, (*self.color, alpha),
-                             (self.glow_radius, self.glow_radius), size)
-
+                               (self.glow_radius, self.glow_radius), size)
 
     def move(self, up: bool, left: bool = None):
         # Store previous position for boundary checking
@@ -202,8 +233,8 @@ class Player:
                 # Left side boundaries
                 if self.x < padding:
                     self.x = padding
-                elif self.x > WINDOW_WIDTH//2 - padding:
-                    self.x = WINDOW_WIDTH//2 - padding
+                elif self.x > WINDOW_WIDTH // 2 - padding:
+                    self.x = WINDOW_WIDTH // 2 - padding
             else:
                 if left:
                     self.x -= self.speed
@@ -211,18 +242,18 @@ class Player:
                     self.x += self.speed
 
                 # Right side boundaries
-                if self.x < WINDOW_WIDTH//2 + padding:
-                    self.x = WINDOW_WIDTH//2 + padding
+                if self.x < WINDOW_WIDTH // 2 + padding:
+                    self.x = WINDOW_WIDTH // 2 + padding
                 elif self.x > WINDOW_WIDTH - padding:
                     self.x = WINDOW_WIDTH - padding
 
     def draw(self, screen):
         # Draw paddle with glow effect
         screen.blit(self.glow_surface,
-                   (self.x - self.glow_radius, self.y - self.glow_radius))
+                    (self.x - self.glow_radius, self.y - self.glow_radius))
         screen.blit(self.base_surface,
-                   (self.x - self.radius, self.y - self.radius))
-        
+                    (self.x - self.radius, self.y - self.radius))
+
         screen.blit(self.paddle_surface, (self.x - PADDLE_RADIUS, self.y - PADDLE_RADIUS))
 
         # Draw score
@@ -230,8 +261,6 @@ class Player:
         score_text = font.render(str(self.score), True, WHITE)
         score_x = 50 if self.side == 'left' else WINDOW_WIDTH - 70
         screen.blit(score_text, (score_x, 30))
-
-
 
     def apply_powerup(self, powerup_type):
         current_time = pygame.time.get_ticks()
@@ -251,7 +280,7 @@ class Player:
                 alpha = 100 - i * 10
                 size = self.radius + i * 2
                 pygame.draw.circle(self.glow_surface, (*self.color, alpha),
-                                 (self.glow_radius, self.glow_radius), size)
+                                   (self.glow_radius, self.glow_radius), size)
             self.active_powerups['size_change'] = current_time + POWERUP_DURATION
 
     def update_powerups(self):
@@ -276,9 +305,10 @@ class Player:
                     alpha = 100 - i * 10
                     size = self.radius + i * 2
                     pygame.draw.circle(self.glow_surface, (*self.color, alpha),
-                                     (self.glow_radius, self.glow_radius), size)
+                                       (self.glow_radius, self.glow_radius), size)
 
             del self.active_powerups[powerup_type]
+
 
 class PowerUp:
     def __init__(self, x: float, y: float):
@@ -299,6 +329,7 @@ class PowerUp:
             'ball_speed': ORANGE,
             'multi_ball': GREEN
         }[self.type]
+        self.spawn_time = pygame.time.get_ticks()
 
         # Create surfaces for glow effect
         self.glow_radius = self.radius * 2
@@ -313,13 +344,14 @@ class PowerUp:
             alpha = 100 - i * 10
             size = self.radius + i * 2
             pygame.draw.circle(self.glow_surface, (*self.color, alpha),
-                             (self.glow_radius, self.glow_radius), size)
+                               (self.glow_radius, self.glow_radius), size)
 
     def draw(self, screen):
         screen.blit(self.glow_surface,
-                   (self.x - self.glow_radius, self.y - self.glow_radius))
+                    (self.x - self.glow_radius, self.y - self.glow_radius))
         screen.blit(self.base_surface,
-                   (self.x - self.radius, self.y - self.radius))
+                    (self.x - self.radius, self.y - self.radius))
+
 
 class Particle:
     def __init__(self, x, y, color):
@@ -344,8 +376,9 @@ class Particle:
         particle_color = (*self.color[:3], alpha)
         particle_surface = pygame.Surface((int(self.size * 2), int(self.size * 2)), pygame.SRCALPHA)
         pygame.draw.circle(particle_surface, particle_color,
-                         (int(self.size), int(self.size)), int(self.size))
+                           (int(self.size), int(self.size)), int(self.size))
         screen.blit(particle_surface, (int(self.x - self.size), int(self.y - self.size)))
+
 
 class GoalAnimation:
     def __init__(self, x, y):
@@ -387,6 +420,7 @@ class GoalAnimation:
         dest_rect = scaled_surface.get_rect(center=(self.x, self.y))
         screen.blit(scaled_surface, dest_rect)
 
+
 class Game:
     def __init__(self):
         super().__init__()
@@ -394,8 +428,17 @@ class Game:
         pygame.display.set_caption("Glow Hockey")
         self.clock = pygame.time.Clock()
         game_music.play()
+        self.game_state = 'menu'  # New game state tracking
+        self.menu = MenuScreen(self.screen)
+        self.paused = False
+        self.pause_overlay = pygame.Surface((WINDOW_WIDTH, WINDOW_HEIGHT))
+        self.pause_overlay.set_alpha(128)  # Set transparency once
+        self.pause_overlay.fill(BLACK)
+
+        self.init_game_objects()
 
         # Create surfaces for boundary glow effects
+    def init_game_objects(self):
         self.boundary_surface = pygame.Surface((WINDOW_WIDTH, WINDOW_HEIGHT), pygame.SRCALPHA)
         self.create_boundary_glow()
 
@@ -421,51 +464,50 @@ class Game:
         for _ in range(PARTICLE_COUNT):
             self.particles.append(Particle(x, y, color))
 
-
     def create_boundary_glow(self):
         # Top boundary
         for i in range(5):
             alpha = 150 - i * 30
             pygame.draw.rect(self.boundary_surface, (*GREEN, alpha),
-                           (0, i, WINDOW_WIDTH, WALL_THICKNESS))
+                             (0, i, WINDOW_WIDTH, WALL_THICKNESS))
 
         # Bottom boundary
         for i in range(5):
             alpha = 150 - i * 30
             pygame.draw.rect(self.boundary_surface, (*RED, alpha),
-                           (0, WINDOW_HEIGHT - WALL_THICKNESS - i, WINDOW_WIDTH, WALL_THICKNESS))
+                             (0, WINDOW_HEIGHT - WALL_THICKNESS - i, WINDOW_WIDTH, WALL_THICKNESS))
 
         # Left boundary (excluding goal area)
-        goal_top = WINDOW_HEIGHT//2 - GOAL_WIDTH//2
-        goal_bottom = WINDOW_HEIGHT//2 + GOAL_WIDTH//2
+        goal_top = WINDOW_HEIGHT // 2 - GOAL_WIDTH // 2
+        goal_bottom = WINDOW_HEIGHT // 2 + GOAL_WIDTH // 2
         for i in range(5):
             alpha = 150 - i * 30
             pygame.draw.rect(self.boundary_surface, (*GREEN, alpha),
-                           (i, 0, WALL_THICKNESS, goal_top))
+                             (i, 0, WALL_THICKNESS, goal_top))
             pygame.draw.rect(self.boundary_surface, (*GREEN, alpha),
-                           (i, goal_bottom, WALL_THICKNESS, WINDOW_HEIGHT - goal_bottom))
+                             (i, goal_bottom, WALL_THICKNESS, WINDOW_HEIGHT - goal_bottom))
 
         # Right boundary (excluding goal area)
         for i in range(5):
             alpha = 150 - i * 30
             pygame.draw.rect(self.boundary_surface, (*RED, alpha),
-                           (WINDOW_WIDTH - WALL_THICKNESS - i, 0, WALL_THICKNESS, goal_top))
+                             (WINDOW_WIDTH - WALL_THICKNESS - i, 0, WALL_THICKNESS, goal_top))
             pygame.draw.rect(self.boundary_surface, (*RED, alpha),
-                           (WINDOW_WIDTH - WALL_THICKNESS - i, goal_bottom, WALL_THICKNESS, WINDOW_HEIGHT - goal_bottom))
+                             (WINDOW_WIDTH - WALL_THICKNESS - i, goal_bottom, WALL_THICKNESS,
+                              WINDOW_HEIGHT - goal_bottom))
 
     def spawn_ball(self, side: str):
-        x = WINDOW_WIDTH // 4 if side == 'left' else 3 * WINDOW_WIDTH // 4
+        x = WINDOW_WIDTH // 2
         y = WINDOW_HEIGHT // 2
-        angle = random.uniform(-math.pi/4, math.pi/4)
-        if side == 'right':
-            angle += math.pi
+        angle = random.uniform(-math.pi / 4, math.pi / 4)
+        # if side == 'right':
+        #     angle += math.pi
         dx = math.cos(angle)
         dy = math.sin(angle)
-        self.balls.append(Ball(x, y, BALL_RADIUS, dx, dy))
+        self.balls.append(Ball(x, y, BALL_RADIUS, 0, 0))
 
     def check_collision(self, ball, player):
         current_time = pygame.time.get_ticks()
-        
 
         # Check collision cooldown
         if current_time - ball.last_collision_time < ball.collision_cooldown:
@@ -521,22 +563,26 @@ class Game:
     def spawn_powerup(self):
         # Spawn power-up in a random location, avoiding walls and goals
         x = random.randint(WALL_THICKNESS + POWERUP_SIZE,
-                          WINDOW_WIDTH - WALL_THICKNESS - POWERUP_SIZE)
+                           WINDOW_WIDTH - WALL_THICKNESS - POWERUP_SIZE)
         y = random.randint(WALL_THICKNESS + POWERUP_SIZE,
-                          WINDOW_HEIGHT - WALL_THICKNESS - POWERUP_SIZE)
+                           WINDOW_HEIGHT - WALL_THICKNESS - POWERUP_SIZE)
 
         # Avoid spawning in goal areas
-        goal_top = WINDOW_HEIGHT//2 - GOAL_WIDTH//2
-        goal_bottom = WINDOW_HEIGHT//2 + GOAL_WIDTH//2
+        goal_top = WINDOW_HEIGHT // 2 - GOAL_WIDTH // 2
+        goal_bottom = WINDOW_HEIGHT // 2 + GOAL_WIDTH // 2
 
         if (x < WALL_THICKNESS * 2 or x > WINDOW_WIDTH - WALL_THICKNESS * 2) and \
-           (y > goal_top - POWERUP_SIZE and y < goal_bottom + POWERUP_SIZE):
+                (y > goal_top - POWERUP_SIZE and y < goal_bottom + POWERUP_SIZE):
             return self.spawn_powerup()
 
         self.powerups.append(PowerUp(x, y))
 
     def check_powerup_collisions(self):
+        current_time = pygame.time.get_ticks()
         for powerup in self.powerups[:]:
+            if current_time - powerup.spawn_time >= POWERUP_LIFETIME:
+                self.powerups.remove(powerup)
+                continue
             # Check collision with players
             for player in [self.player1, self.player2]:
                 dx = powerup.x - player.x
@@ -556,7 +602,6 @@ class Game:
                     self.powerups.remove(powerup)
                     self.create_collision_particles(powerup.x, powerup.y, powerup.color)
                     break
-
 
     def update(self):
 
@@ -617,8 +662,8 @@ class Game:
                         ball.dy /= magnitude
 
             # Check for goals
-            goal_top = WINDOW_HEIGHT//2 - GOAL_WIDTH//2
-            goal_bottom = WINDOW_HEIGHT//2 + GOAL_WIDTH//2
+            goal_top = WINDOW_HEIGHT // 2 - GOAL_WIDTH // 2
+            goal_bottom = WINDOW_HEIGHT // 2 + GOAL_WIDTH // 2
 
             # Left goal
             if ball.x - ball.radius <= 0 and goal_top <= ball.y <= goal_bottom:
@@ -628,7 +673,7 @@ class Game:
                 self.respawn_timer = pygame.time.get_ticks()
                 self.should_respawn = True
                 self.respawn_side = 'left'
-                self.goal_animations.append(GoalAnimation(WINDOW_WIDTH//2, WINDOW_HEIGHT//2))
+                self.goal_animations.append(GoalAnimation(WINDOW_WIDTH // 2, WINDOW_HEIGHT // 2))
                 goal_sound.play()
 
             # Right goal
@@ -639,8 +684,20 @@ class Game:
                 self.respawn_timer = pygame.time.get_ticks()
                 self.should_respawn = True
                 self.respawn_side = 'right'
-                self.goal_animations.append(GoalAnimation(WINDOW_WIDTH//2, WINDOW_HEIGHT//2))
+                self.goal_animations.append(GoalAnimation(WINDOW_WIDTH // 2, WINDOW_HEIGHT // 2))
                 goal_sound.play()
+
+    def draw_pause_menu(self):
+
+        self.screen.blit(self.pause_overlay, (0, 0))
+
+        # Draw pause menu options
+        font = pygame.font.Font(None, 48)
+        texts = ['PAUSED', 'Press P to Continue', 'Press M for Menu']
+        for i, text in enumerate(texts):
+            rendered = font.render(text, True, WHITE)
+            rect = rendered.get_rect(center=(WINDOW_WIDTH // 2, WINDOW_HEIGHT // 2 - 50 + i * 50))
+            self.screen.blit(rendered, rect)
 
     def draw(self):
         self.screen.fill(BLACK)
@@ -660,23 +717,24 @@ class Game:
         self.screen.blit(self.boundary_surface, (0, 0))
 
         # Draw center line
-        pygame.draw.line(self.screen, (*WHITE,50), (WINDOW_WIDTH // 2, 0), (WINDOW_WIDTH // 2, WINDOW_HEIGHT), 2)
+        pygame.draw.line(self.screen, (*WHITE, 50), (WINDOW_WIDTH // 2, 0), (WINDOW_WIDTH // 2, WINDOW_HEIGHT), 2)
 
-    # Draw center circle
-        pygame.draw.circle(self.screen, (*WHITE,50), (WINDOW_WIDTH // 2, WINDOW_HEIGHT // 2), 50, 2)
+        # Draw center circle
+        pygame.draw.circle(self.screen, (*WHITE, 50), (WINDOW_WIDTH // 2, WINDOW_HEIGHT // 2), 50, 2)
 
-    # Goal areas - semi-circles for each side
+        # Goal areas - semi-circles for each side
         goal_radius = 100  # Customize the radius as needed for the goal area semi-circles
-    
-    # Left goal semi-circle
-        pygame.draw.arc(self.screen, (*WHITE,50), 
+
+        # Left goal semi-circle
+        pygame.draw.arc(self.screen, (*WHITE, 50),
                         (-100, WINDOW_HEIGHT // 2 - goal_radius, goal_radius * 2, goal_radius * 2),
                         4.71, 1.57, 2)  # Arc from bottom to top on left side
 
-    # Right goal semi-circle
-        pygame.draw.arc(self.screen, (*WHITE,50), 
-                    (WINDOW_WIDTH - goal_radius, WINDOW_HEIGHT // 2 - goal_radius, goal_radius * 2, goal_radius * 2),
-                    1.57, 4.71, 2)  # Arc from top to bottom on right side
+        # Right goal semi-circle
+        pygame.draw.arc(self.screen, (*WHITE, 50),
+                        (
+                        WINDOW_WIDTH - goal_radius, WINDOW_HEIGHT // 2 - goal_radius, goal_radius * 2, goal_radius * 2),
+                        1.57, 4.71, 2)  # Arc from top to bottom on right side
         # Draw players
         self.player1.draw(self.screen)
         self.player2.draw(self.screen)
@@ -695,7 +753,7 @@ class Game:
 
         if self.should_respawn:
             ready_text = self.font.render("Get Ready!", True, YELLOW)
-            text_rect = ready_text.get_rect(center=(WINDOW_WIDTH//2, WINDOW_HEIGHT//2))
+            text_rect = ready_text.get_rect(center=(WINDOW_WIDTH // 2, WINDOW_HEIGHT // 2))
             self.screen.blit(ready_text, text_rect)
 
         pygame.display.flip()
@@ -707,48 +765,76 @@ class Game:
                 if event.type == pygame.QUIT:
                     running = False
 
-            keys = pygame.key.get_pressed()
+                if event.type == pygame.KEYDOWN:
+                    if self.game_state == 'menu':
+                        if event.key == pygame.K_UP:
+                            self.menu.selected_option = (self.menu.selected_option - 1) % len(self.menu.options)
+                        elif event.key == pygame.K_DOWN:
+                            self.menu.selected_option = (self.menu.selected_option + 1) % len(self.menu.options)
+                        elif event.key == pygame.K_RETURN:
+                            if self.menu.selected_option == 0:  # Start Game
+                                self.game_state = 'game'
+                                self.init_game_objects()
+                            else:  # Exit
+                                running = False
+                    elif self.game_state == 'game':
+                        if event.key == pygame.K_p:  # Pause/Unpause
+                            self.paused = not self.paused
+                        elif event.key == pygame.K_m and self.paused:  # Return to menu while paused
+                            self.game_state = 'menu'
+                            self.paused = False
+                            game_music.stop()
 
-            # Player 1 controls (WASD)
-            # Vertical movement
-            up1 = None
-            if keys[pygame.K_w]:
-                up1 = True
-            elif keys[pygame.K_s]:
-                up1 = False
+            if self.game_state == 'menu':
+                self.menu.draw()
+            elif self.game_state == 'game':
+                if not self.paused:
+                    keys = pygame.key.get_pressed()
 
-            # Horizontal movement
-            left1 = None
-            if keys[pygame.K_a]:
-                left1 = True
-            elif keys[pygame.K_d]:
-                left1 = False
+                    # Player 1 controls (WASD)
+                    up1 = None
+                    if keys[pygame.K_w]:
+                        up1 = True
+                    elif keys[pygame.K_s]:
+                        up1 = False
 
-            self.player1.move(up1, left1)
+                    left1 = None
+                    if keys[pygame.K_a]:
+                        left1 = True
+                    elif keys[pygame.K_d]:
+                        left1 = False
 
-            # Player 2 controls (Arrow keys)
-            # Vertical movement
-            up2 = None
-            if keys[pygame.K_UP]:
-                up2 = True
-            elif keys[pygame.K_DOWN]:
-                up2 = False
+                    self.player1.move(up1, left1)
 
-            # Horizontal movement
-            left2 = None
-            if keys[pygame.K_LEFT]:
-                left2 = True
-            elif keys[pygame.K_RIGHT]:
-                left2 = False
+                    # Player 2 controls (Arrow keys)
+                    up2 = None
+                    if keys[pygame.K_UP]:
+                        up2 = True
+                    elif keys[pygame.K_DOWN]:
+                        up2 = False
 
-            self.player2.move(up2, left2)
+                    left2 = None
+                    if keys[pygame.K_LEFT]:
+                        left2 = True
+                    elif keys[pygame.K_RIGHT]:
+                        left2 = False
 
-            self.update()
-            self.draw()
+                    self.player2.move(up2, left2)
+
+                    self.update()
+
+                self.draw()
+                if self.paused:
+                    self.draw_pause_menu()
+
+                pygame.display.flip()
+
             self.clock.tick(FPS)
 
         pygame.quit()
 
+
 if __name__ == "__main__":
     game = Game()
     game.run()
+
