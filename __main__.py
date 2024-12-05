@@ -12,9 +12,16 @@ pygame.mixer.init()
 Game_audio = os.path.join(os.path.dirname("seige_spheres"), "Game_audio")
 
 # Game sounds
-paddle_collision = pygame.mixer.Sound(os.path.join(Game_audio, "collision_sound.wav"))
+#When paddle hits the puck
+paddle_collision = pygame.mixer.Sound(os.path.join(Game_audio, "collision_sound.wav")) 
+
+#Overall music for the game
 game_music = pygame.mixer.Sound(os.path.join(Game_audio, "game_music.mp3"))
+
+#Sound when a player scores
 goal_sound = pygame.mixer.Sound(os.path.join(Game_audio, "goal_sound.mp3"))
+
+#Sound when a power-up is activated
 powerup_sound = pygame.mixer.Sound(os.path.join(Game_audio, "powerup_sound.mp3"))
 
 # Constants
@@ -318,7 +325,7 @@ class Player:
 
 
 class PowerUp:
-    def __init__(self, x: float, y: float): #Initializes the  power-up's
+    def __init__(self, x: float, y: float):     #Initializes the  power-up's
         self.x = x
         self.y = y
         self.radius = POWERUP_SIZE
