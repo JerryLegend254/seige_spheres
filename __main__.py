@@ -64,6 +64,7 @@ class MenuScreen:
         #Adding a background image
         background_image = pygame.image.load('images/menu_screen.jpg').convert()
         self.background_image = pygame.image.load('images/menu_screen.jpg').convert()
+        
         #Scaling the image to fit the window
         self.background_image=pygame.transform.scale(background_image, (WINDOW_WIDTH,WINDOW_HEIGHT))
 
@@ -288,75 +289,6 @@ class Player:
                 pygame.draw.circle(self.glow_surface, (*self.color, alpha),
                                    (self.glow_radius, self.glow_radius), size)
             self.active_powerups['size_change'] = current_time + POWERUP_DURATION
-
-    def update_powerups(self):
-        current_time = pygame.time.get_ticks()
-        expired_powerups = []
-
-        for powerup_type, end_time in self.active_powerups.items():
-            if current_time >= end_time:
-                expired_powerups.append(powerup_type)
-
-        for powerup_type in expired_powerups:
-            if powerup_type == 'speed_boost':
-                self.speed = self.original_speed
-            elif powerup_type == 'size_change':
-                self.radius = self.original_radius
-                # Recreate surfaces with original size
-                self.glow_radius = self.radius * 2
-                self.glow_surface = pygame.Surface((self.glow_radius * 2, self.glow_radius * 2), pygame.SRCALPHA)
-                self.base_surface = pygame.Surface((self.radius * 2, self.radius * 2), pygame.SRCALPHA)
-                pygame.draw.circle(self.base_surface, self.color, (self.radius, self.radius), self.radius)
-                for i in range(10):
-                    alpha = 100 - i * 10
-                    size = self.radius + i * 2
-                    pygame.draw.circle(self.glow_surface, (*self.color, alpha),
-                                       (self.glow_radius, self.glow_radius), size)
-
-            del self.active_powerups[powerup_type]
-
-
-class PowerUp:
-    def __init__(self, x: float, y: float):
-        self.x = x
-        self.y = y
-        self.radius = POWERUP_SIZE
-        self.type = random.choice([
-            'speed_boost',
-            'size_change',
-            'ball_speed',
-            'multi_ball'
-        ])
-
-        # Set color based on power-up type
-        self.color = {
-            'speed_boost': BLUE,
-            'size_change': PURPLE,
-            'ball_speed': ORANGE,
-            'multi_ball': GREEN
-        }[self.type]
-        self.spawn_time = pygame.time.get_ticks()
-
-        # Create surfaces for glow effect
-        self.glow_radius = self.radius * 2
-        self.glow_surface = pygame.Surface((self.glow_radius * 2, self.glow_radius * 2), pygame.SRCALPHA)
-        self.base_surface = pygame.Surface((self.radius * 2, self.radius * 2), pygame.SRCALPHA)
-
-        # Draw the base power-up
-        pygame.draw.circle(self.base_surface, self.color, (self.radius, self.radius), self.radius)
-
-        # Create glow effect
-        for i in range(10):
-            alpha = 100 - i * 10
-            size = self.radius + i * 2
-            pygame.draw.circle(self.glow_surface, (*self.color, alpha),
-                               (self.glow_radius, self.glow_radius), size)
-
-    def draw(self, screen):
-        screen.blit(self.glow_surface,
-                    (self.x - self.glow_radius, self.y - self.glow_radius))
-        screen.blit(self.base_surface,
-                    (self.x - self.radius, self.y - self.radius))
 
 
 class Particle:
