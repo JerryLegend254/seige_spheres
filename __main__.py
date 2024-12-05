@@ -59,11 +59,17 @@ class MenuScreen:
         self.font_large = pygame.font.Font(None, 74)
         self.font_small = pygame.font.Font(None, 36)
         self.selected_option = 0
-        self.options = ['Start Game', 'Exit']
+        self.options = ['Play Game', 'Exit']
+
+        #Adding a background image
+        background_image = pygame.image.load('images/menu_screen.jpg').convert()
+        self.background_image = pygame.image.load('images/menu_screen.jpg').convert()
+        #Scaling the image to fit the window
+        self.background_image=pygame.transform.scale(background_image, (WINDOW_WIDTH,WINDOW_HEIGHT))
 
     def draw(self):
-        self.screen.fill(MENU_BG_COLOR)
-
+        #self.screen.fill(MENU_BG_COLOR)
+        self.screen.blit(self.background_image, (0,0))
         # Draw title
         title = self.font_large.render('Glow Hockey', True, WHITE)
         title_rect = title.get_rect(center=(WINDOW_WIDTH // 2, WINDOW_HEIGHT // 4))
