@@ -294,6 +294,10 @@ class Player:
         for powerup_type in expired_powerups:
             if powerup_type == 'speed_boost':
                 self.speed = self.original_speed
+            elif powerup_type == 'freeze_opponent':
+                self.speed = self.original_speed
+            elif powerup_type == 'double_points':
+                pass
             elif powerup_type == 'size_change':
                 self.radius = self.original_radius
                 # Recreate surfaces with original size
@@ -319,7 +323,9 @@ class PowerUp:
             'speed_boost',
             'size_change',
             'ball_speed',
-            'multi_ball'
+            'multi_ball',
+            'freeze_opponent',  # New power-up
+            'double_points'
         ])
 
         # Set color based on power-up type
@@ -327,7 +333,9 @@ class PowerUp:
             'speed_boost': BLUE,
             'size_change': PURPLE,
             'ball_speed': ORANGE,
-            'multi_ball': GREEN
+            'multi_ball': GREEN,
+            'freeze_opponent': DARK_RED,
+            'double_points': YELLOW
         }[self.type]
         self.spawn_time = pygame.time.get_ticks()
 
@@ -567,6 +575,7 @@ class Game:
         #     angle += math.pi
         dx = math.cos(angle)
         dy = math.sin(angle)
+        speed = INITIAL_BALL_SPEED * random.uniform(0.8, 1.2)
         self.balls.append(Ball(x, y, BALL_RADIUS, 0, 0))
 
     def check_collision(self, ball, player):
@@ -655,10 +664,17 @@ class Game:
                 if distance < player.radius + powerup.radius:
                     powerup_sound.play()
                     if powerup.type == 'multi_ball':
-                        self.spawn_ball(player.side)
+                        for _ in range(2):
+                            self.spawn_ball(player.side)
                     elif powerup.type == 'ball_speed':
                         for ball in self.balls:
                             ball.speed *= 1.2
+                    elif powerup.type == 'freeze_opponent':
+                        opponent = self.player2 if player == self.player1 else self.player1
+                        opponent.speed = 0
+                        opponent.active_powerups['freeze_opponent'] = current_time + POWERUP_DURATION
+                    elif powerup.type == 'double_points':
+                        player.active_powerups['double_points'] = current_time + POWERUP_DURATION
                     else:
                         player.apply_powerup(powerup.type)
 
@@ -730,7 +746,8 @@ class Game:
 
             # Left goal
             if ball.x - ball.radius <= 0 and goal_top <= ball.y <= goal_bottom:
-                self.player2.score += 1
+                score_increment = 2 if self.player2.active_powerups.get('double_points') else 1
+                self.player2.score += score_increment
                 ball.active = False
                 self.balls.remove(ball)
                 self.respawn_timer = pygame.time.get_ticks()
@@ -741,7 +758,9 @@ class Game:
 
             # Right goal
             elif ball.x + ball.radius >= WINDOW_WIDTH and goal_top <= ball.y <= goal_bottom:
-                self.player1.score += 1
+
+                score_increment = 2 if self.player2.active_powerups.get('double_points') else 1
+                self.player1.score += score_increment
                 ball.active = False
                 self.balls.remove(ball)
                 self.respawn_timer = pygame.time.get_ticks()
@@ -752,7 +771,7 @@ class Game:
 
             if self.ai_player and self.balls:
                 current_time = pygame.time.get_ticks()
-                self.ai_player.ai_move(self.balls[0] if self.balls else None, current_time)
+                self.ai_player.ai_move(self.balls[0], current_time)
 
     def draw_pause_menu(self):
         # Dim the background
