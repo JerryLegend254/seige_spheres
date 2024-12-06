@@ -492,7 +492,7 @@ class Game:
         self.screen = pygame.display.set_mode((WINDOW_WIDTH, WINDOW_HEIGHT))
         pygame.display.set_caption("Glow Hockey")
         self.clock = pygame.time.Clock()
-        game_music.play()
+        game_music.play(loops=-1)
         self.game_state = 'menu'  # New game state tracking
         self.menu = MenuScreen(self.screen)
         self.paused = False
@@ -589,7 +589,7 @@ class Game:
         dy = ball.y - player.y
         distance = math.sqrt(dx * dx + dy * dy)
 
-        if distance < ball.radius + player.radius:
+        if distance < ball.radius + player.radius + 10:
             paddle_collision.play()
 
             # Create particles at collision point
