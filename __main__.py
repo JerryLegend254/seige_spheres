@@ -968,7 +968,8 @@ class Game:
                     if not self.paused:
                         self.update()
 
-                self.draw()
+                if not self.paused:
+                    self.draw()
                 if self.paused:
                     self.draw_pause_menu()
 
