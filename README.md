@@ -54,9 +54,9 @@ cd seige_spheres
 python -m venv venv
 ```
  - On Windows
-  ```bash
+   ```bash
     venv\Scripts\activate
-  ```
+   ```
  - on Mac/Linux
    ```bash
     source venv/bin/activate
