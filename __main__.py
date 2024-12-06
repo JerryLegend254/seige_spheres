@@ -84,15 +84,15 @@ class MenuScreen:
         self.screen.blit(title, title_rect)
 
         # Draw options
+
         for i, option in enumerate(self.options):
             color = YELLOW if i == self.selected_option else WHITE
             text = self.font_small.render(option, True, color)
             rect = text.get_rect(center=(WINDOW_WIDTH // 2, WINDOW_HEIGHT // 2 + i * 50))
             self.screen.blit(text, rect)
-
         # Draw instructions
         instructions = self.font_small.render('Use UP/DOWN arrows and ENTER to select', True, WHITE)
-        inst_rect = instructions.get_rect(center=(WINDOW_WIDTH // 2, WINDOW_HEIGHT * 3 // 4))
+        inst_rect = instructions.get_rect(center=(WINDOW_WIDTH // 2, WINDOW_HEIGHT // 4 + 50))
         self.screen.blit(instructions, inst_rect)
 
         pygame.display.flip()
@@ -308,6 +308,10 @@ class Player:
         for powerup_type in expired_powerups:
             if powerup_type == 'speed_boost':
                 self.speed = self.original_speed
+            elif powerup_type == 'freeze_opponent':
+                self.speed = self.original_speed
+            elif powerup_type == 'double_points':
+                pass
             elif powerup_type == 'size_change':
                 self.radius = self.original_radius
                 # Recreate surfaces with original size
@@ -333,7 +337,9 @@ class PowerUp:
             'speed_boost',
             'size_change',
             'ball_speed',
-            'multi_ball'
+            'multi_ball',
+            'freeze_opponent',  # New power-up
+            'double_points'
         ])
 
         # Set color based on power-up type
@@ -341,7 +347,9 @@ class PowerUp:
             'speed_boost': BLUE,
             'size_change': PURPLE,
             'ball_speed': ORANGE,
-            'multi_ball': GREEN
+            'multi_ball': GREEN,
+            'freeze_opponent': DARK_RED,
+            'double_points': YELLOW
         }[self.type]
         self.spawn_time = pygame.time.get_ticks()
 
@@ -435,19 +443,77 @@ class GoalAnimation:
         screen.blit(scaled_surface, dest_rect)
 
 
+class AIPlayer(Player):
+    def __init__(self, x: int, difficulty: str = 'hard'):
+        super().__init__(x, 'right')  # AI will always be on the right side
+        self.difficulty = difficulty
+        self.reaction_time = 0
+        self.last_move_time = 0
+        self.prediction_error = 0
+
+        # Adjust AI parameters based on difficulty
+        if difficulty == 'easy':
+            self.speed = self.speed   # Slower movement
+            self.prediction_error = 50 # Larger prediction error
+            self.reaction_time = 0  # Slower reaction
+        elif difficulty == 'medium':
+            self.speed = self.speed   # Faster movement
+            self.prediction_error = 25  # Smaller prediction error
+            self.reaction_time = 0 # Quicker reaction
+
+    def predict_ball_position(self, ball, current_time):
+        # Only react if enough time has passed since last move
+        if current_time - self.last_move_time < self.reaction_time:
+            return None
+
+        if not ball or not ball.active:
+            return None
+
+        # Predict where the ball will be when it reaches the AI's x-coordinate
+        dx = ball.x - self.x
+        if dx >= 0:  # Ball is moving away or stationary
+            return None
+
+        # Calculate time to reach AI's x-coordinate
+        time_to_reach = abs(dx / (ball.dx * ball.speed)) if ball.dx != 0 else float('inf')
+
+        # Predict y position with some error based on difficulty
+        predicted_y = ball.y + ball.dy * ball.speed * time_to_reach
+
+        # Add some randomness based on difficulty
+        prediction_offset = random.uniform(-self.prediction_error, self.prediction_error)
+        predicted_y += prediction_offset
+
+        return predicted_y
+
+    def ai_move(self, ball, current_time):
+        predicted_y = self.predict_ball_position(ball, current_time)
+
+        if predicted_y is not None:
+            # Decide movement direction
+            if predicted_y < self.y:
+                self.move(True)
+            elif predicted_y > self.y:
+                self.move(False)
+
+            self.last_move_time = current_time
+
 class Game:
-    def __init__(self):
+    def __init__(self, game_mode='pvp'):
         super().__init__()
+        self.game_mode = game_mode
+        self.ai_player = None
         self.screen = pygame.display.set_mode((WINDOW_WIDTH, WINDOW_HEIGHT))
         pygame.display.set_caption("Glow Hockey")
         self.clock = pygame.time.Clock()
-        game_music.play()
+        game_music.play(loops=-1)
         self.game_state = 'menu'  # New game state tracking
         self.menu = MenuScreen(self.screen)
         self.paused = False
         self.pause_overlay = pygame.Surface((WINDOW_WIDTH, WINDOW_HEIGHT))
         self.pause_overlay.set_alpha(128)  # Set transparency once
         self.pause_overlay.fill(BLACK)
+        self.menu.options = ['PvP', 'Easy AI', 'Medium AI', 'Hard AI', 'Exit']
 
         self.init_game_objects()
 
@@ -457,7 +523,12 @@ class Game:
         self.create_boundary_glow()
 
         self.player1 = Player(150, 'left')
-        self.player2 = Player(WINDOW_WIDTH - 150, 'right')
+        if self.game_mode =='pvp':
+            self.player2 = Player(WINDOW_WIDTH - 150, 'right')
+        else:
+            difficulty = self.game_mode.split()[0].lower()
+            self.player2 = AIPlayer(WINDOW_WIDTH - 150, difficulty)
+            self.ai_player = self.player2
 
         self.balls = []
         ranum = random.randrange(2)
@@ -518,6 +589,7 @@ class Game:
         #     angle += math.pi
         dx = math.cos(angle)
         dy = math.sin(angle)
+        speed = INITIAL_BALL_SPEED * random.uniform(0.8, 1.2)
         self.balls.append(Ball(x, y, BALL_RADIUS, 0, 0))
 
     def check_collision(self, ball, player):
@@ -531,7 +603,7 @@ class Game:
         dy = ball.y - player.y
         distance = math.sqrt(dx * dx + dy * dy)
 
-        if distance < ball.radius + player.radius:
+        if distance < ball.radius + player.radius + 10:
             paddle_collision.play()
 
             # Create particles at collision point
@@ -606,10 +678,17 @@ class Game:
                 if distance < player.radius + powerup.radius:
                     powerup_sound.play()
                     if powerup.type == 'multi_ball':
-                        self.spawn_ball(player.side)
+                        for _ in range(2):
+                            self.spawn_ball(player.side)
                     elif powerup.type == 'ball_speed':
                         for ball in self.balls:
                             ball.speed *= 1.2
+                    elif powerup.type == 'freeze_opponent':
+                        opponent = self.player2 if player == self.player1 else self.player1
+                        opponent.speed = 0
+                        opponent.active_powerups['freeze_opponent'] = current_time + POWERUP_DURATION
+                    elif powerup.type == 'double_points':
+                        player.active_powerups['double_points'] = current_time + POWERUP_DURATION
                     else:
                         player.apply_powerup(powerup.type)
 
@@ -681,7 +760,8 @@ class Game:
 
             # Left goal
             if ball.x - ball.radius <= 0 and goal_top <= ball.y <= goal_bottom:
-                self.player2.score += 1
+                score_increment = 2 if self.player2.active_powerups.get('double_points') else 1
+                self.player2.score += score_increment
                 ball.active = False
                 self.balls.remove(ball)
                 self.respawn_timer = pygame.time.get_ticks()
@@ -692,7 +772,9 @@ class Game:
 
             # Right goal
             elif ball.x + ball.radius >= WINDOW_WIDTH and goal_top <= ball.y <= goal_bottom:
-                self.player1.score += 1
+
+                score_increment = 2 if self.player2.active_powerups.get('double_points') else 1
+                self.player1.score += score_increment
                 ball.active = False
                 self.balls.remove(ball)
                 self.respawn_timer = pygame.time.get_ticks()
@@ -701,17 +783,45 @@ class Game:
                 self.goal_animations.append(GoalAnimation(WINDOW_WIDTH // 2, WINDOW_HEIGHT // 2))
                 goal_sound.play()
 
+            if self.ai_player and self.balls:
+                current_time = pygame.time.get_ticks()
+                self.ai_player.ai_move(self.balls[0], current_time)
+
     def draw_pause_menu(self):
+        # Dim the background
+        self.screen.fill(BLACK)
 
-        self.screen.blit(self.pause_overlay, (0, 0))
+        # Draw semi-transparent box for menu
+        menu_width, menu_height = 400, 250
+        menu_x = (WINDOW_WIDTH - menu_width) // 2
+        menu_y = (WINDOW_HEIGHT - menu_height) // 2
+        pygame.draw.rect(self.screen, (0, 0, 0, 200), (menu_x, menu_y, menu_width, menu_height), border_radius=15)
 
-        # Draw pause menu options
-        font = pygame.font.Font(None, 48)
-        texts = ['PAUSED', 'Press P to Continue', 'Press M for Menu']
-        for i, text in enumerate(texts):
-            rendered = font.render(text, True, WHITE)
-            rect = rendered.get_rect(center=(WINDOW_WIDTH // 2, WINDOW_HEIGHT // 2 - 50 + i * 50))
-            self.screen.blit(rendered, rect)
+        # Add a border to the menu
+        pygame.draw.rect(self.screen, WHITE, (menu_x, menu_y, menu_width, menu_height), 3, border_radius=15)
+
+        # Title
+        font_title = pygame.font.Font(None, 64)
+        title_text = font_title.render("PAUSED", True, YELLOW)
+        title_rect = title_text.get_rect(center=(WINDOW_WIDTH // 2, menu_y + 40))
+        self.screen.blit(title_text, title_rect)
+
+        # Menu options
+        font = pygame.font.Font(None, 36)
+        options = ['Continue', 'Menu']
+        for i, option in enumerate(options):
+            color = WHITE if i == 0 else GREEN  # Different colors for options
+            option_text = font.render(option, True, color)
+            option_rect = option_text.get_rect(center=(WINDOW_WIDTH // 2, menu_y + 100 + i * 50))
+            self.screen.blit(option_text, option_rect)
+
+        # Footer
+        footer_font = pygame.font.Font(None, 24)
+        footer_text = footer_font.render("Use P to resume or M to quit to the menu.", True, YELLOW)
+        footer_rect = footer_text.get_rect(center=(WINDOW_WIDTH // 2, menu_y + menu_height - 30))
+        self.screen.blit(footer_text, footer_rect)
+
+        pygame.display.flip()
 
     def draw(self):
         self.screen.fill(BLACK)
@@ -786,7 +896,20 @@ class Game:
                         elif event.key == pygame.K_DOWN:
                             self.menu.selected_option = (self.menu.selected_option + 1) % len(self.menu.options)
                         elif event.key == pygame.K_RETURN:
-                            if self.menu.selected_option == 0:  # Start Game
+                            if self.menu.selected_option == 0:  # PvP
+                                self.game_mode = 'pvp'
+                                self.game_state = 'game'
+                                self.init_game_objects()
+                            elif self.menu.selected_option == 1:  # Easy AI
+                                self.game_mode = 'easy AI'
+                                self.game_state = 'game'
+                                self.init_game_objects()
+                            elif self.menu.selected_option == 2:  # Medium AI
+                                self.game_mode = 'medium AI'
+                                self.game_state = 'game'
+                                self.init_game_objects()
+                            elif self.menu.selected_option == 3:  # Hard AI
+                                self.game_mode = 'hard AI'
                                 self.game_state = 'game'
                                 self.init_game_objects()
                             else:  # Exit
@@ -821,21 +944,29 @@ class Game:
                     self.player1.move(up1, left1)
 
                     # Player 2 controls (Arrow keys)
-                    up2 = None
-                    if keys[pygame.K_UP]:
-                        up2 = True
-                    elif keys[pygame.K_DOWN]:
-                        up2 = False
+                    if isinstance(self.player2, AIPlayer):
+                        # If AIPlayer, let AI handle movement
+                        current_time = pygame.time.get_ticks()
+                        if self.balls:
+                            self.player2.ai_move(self.balls[0], current_time)
+                    else:
+                        # Player 2 controls (Arrow keys)
+                        up2 = None
+                        if keys[pygame.K_UP]:
+                            up2 = True
+                        elif keys[pygame.K_DOWN]:
+                            up2 = False
 
-                    left2 = None
-                    if keys[pygame.K_LEFT]:
-                        left2 = True
-                    elif keys[pygame.K_RIGHT]:
-                        left2 = False
+                        left2 = None
+                        if keys[pygame.K_LEFT]:
+                            left2 = True
+                        elif keys[pygame.K_RIGHT]:
+                            left2 = False
 
-                    self.player2.move(up2, left2)
+                        self.player2.move(up2, left2)
 
-                    self.update()
+                    if not self.paused:
+                        self.update()
 
                 self.draw()
                 if self.paused:
