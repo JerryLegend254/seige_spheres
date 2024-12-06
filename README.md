@@ -55,12 +55,12 @@ python -m venv venv
 source venv/bin/activate
 ```
 
-2. Install required packages:
+3. Install required packages:
 ```bash
 pip install -r requirements.txt
 ```
 
-3. Run the game:
+4. Run the game:
 ```bash
 python __main__.py
 ```
