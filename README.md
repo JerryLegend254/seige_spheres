@@ -52,9 +52,15 @@ cd seige_spheres
 2. Create a virtual environment (recommended):
 ```bash
 python -m venv venv
-source venv/bin/activate
 ```
-
+ - On Windows
+  ```bash
+  venv\Scripts\activate
+  ```
+ - on Mac/Linux
+   ```bash
+    source venv/bin/activate
+   ```
 3. Install required packages:
 ```bash
 pip install -r requirements.txt
