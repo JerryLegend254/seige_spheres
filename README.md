@@ -49,6 +49,11 @@ A modern twist on the classic air hockey game, featuring glowing visual effects,
 git clone https://github.com/JerryLegend254/seige_spheres.git
 cd seige_spheres
 ```
+2. Create a virtual environment (recommended):
+```bash
+python -m venv venv
+source venv/bin/activate
+```
 
 2. Install required packages:
 ```bash
