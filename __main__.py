@@ -514,6 +514,9 @@ class Game:
         self.pause_overlay.set_alpha(128)  # Set transparency once
         self.pause_overlay.fill(BLACK)
         self.menu.options = ['PvP', 'Easy AI', 'Medium AI', 'Hard AI', 'Exit']
+        self.start_time = pygame.time.get_ticks()  # Game start time (in milliseconds)
+        self.game_duration = 90 * 1000  # 1 minute 30 seconds in milliseconds (90,000 ms)
+        self.time_remaining = self.game_duration  # Time remaining (initially set to the full duration)
 
         self.init_game_objects()
 
@@ -787,6 +790,12 @@ class Game:
                 current_time = pygame.time.get_ticks()
                 self.ai_player.ai_move(self.balls[0], current_time)
 
+        elapsed_time = pygame.time.get_ticks() - self.start_time
+        self.time_remaining = max(self.game_duration - elapsed_time, 0)  # Ensure time doesn't go negative
+
+        if self.time_remaining == 0:
+            self.end_game()  # Call the end_game function if time is up
+
     def draw_pause_menu(self):
         # Dim the background
         self.screen.fill(BLACK)
@@ -880,7 +889,36 @@ class Game:
             text_rect = ready_text.get_rect(center=(WINDOW_WIDTH // 2, WINDOW_HEIGHT // 2))
             self.screen.blit(ready_text, text_rect)
 
+        minutes = self.time_remaining // 60000  # Minutes
+        seconds = (self.time_remaining // 1000) % 60  # Seconds
+        timer_text = f"{minutes:02}:{seconds:02}"
+
+        font = pygame.font.Font(None, 36)  # You can change the font size as needed
+        timer_surface = font.render(timer_text, True, WHITE)
+        timer_rect = timer_surface.get_rect(
+            topright=(WINDOW_WIDTH //2, 20))  # Position the timer at the top-right corner
+        self.screen.blit(timer_surface, timer_rect)
+
         pygame.display.flip()
+
+    def end_game(self):
+        # Logic to end the game or transition to another screen
+        self.game_state = 'game_over'  # Set game state to game over
+
+        # Display a "Game Over" message
+        font = pygame.font.Font(None, 72)
+        game_over_text = font.render("Game Over!", True, RED)
+        game_over_rect = game_over_text.get_rect(center=(WINDOW_WIDTH // 2, WINDOW_HEIGHT // 2))
+        self.screen.blit(game_over_text, game_over_rect)
+
+        pygame.display.flip()  # Update the display
+
+        pygame.time.wait(2000)  # Wait for 2 seconds before transitioning to the next state
+        self.reset_game()  # Reset the game if needed (e.g., return to menu or restart)
+
+    def reset_game(self):
+        self.start_time = pygame.time.get_ticks()  # Reset start time
+        self.game_state = 'menu'  # Transition to menu or start a new game
 
     def run(self):
         running = True
