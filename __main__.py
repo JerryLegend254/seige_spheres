@@ -12,9 +12,16 @@ pygame.mixer.init()
 Game_audio = os.path.join(os.path.dirname("seige_spheres"), "Game_audio")
 
 # Game sounds
-paddle_collision = pygame.mixer.Sound(os.path.join(Game_audio, "collision_sound.wav"))
+#When paddle hits the puck
+paddle_collision = pygame.mixer.Sound(os.path.join(Game_audio, "collision_sound.wav")) 
+
+#Overall music for the game
 game_music = pygame.mixer.Sound(os.path.join(Game_audio, "game_music.mp3"))
+
+#Sound when a player scores
 goal_sound = pygame.mixer.Sound(os.path.join(Game_audio, "goal_sound.mp3"))
+
+#Sound when a power-up is activated
 powerup_sound = pygame.mixer.Sound(os.path.join(Game_audio, "powerup_sound.mp3"))
 
 # Constants
@@ -59,11 +66,18 @@ class MenuScreen:
         self.font_large = pygame.font.Font(None, 74)
         self.font_small = pygame.font.Font(None, 36)
         self.selected_option = 0
-        self.options = ['Start Game', 'Exit']
+        self.options = ['Play Game', 'Exit']
+
+        #Adding a background image
+        background_image = pygame.image.load('images/menu_screen.jpg').convert()
+        self.background_image = pygame.image.load('images/menu_screen.jpg').convert()
+        
+        #Scaling the image to fit the window
+        self.background_image=pygame.transform.scale(background_image, (WINDOW_WIDTH,WINDOW_HEIGHT))
 
     def draw(self):
-        self.screen.fill(MENU_BG_COLOR)
-
+        #self.screen.fill(MENU_BG_COLOR)
+        self.screen.blit(self.background_image, (0,0))
         # Draw title
         title = self.font_large.render('Glow Hockey', True, WHITE)
         title_rect = title.get_rect(center=(WINDOW_WIDTH // 2, WINDOW_HEIGHT // 4))
@@ -284,7 +298,7 @@ class Player:
             self.active_powerups['size_change'] = current_time + POWERUP_DURATION
 
     def update_powerups(self):
-        current_time = pygame.time.get_ticks()
+        current_time = pygame.time.get_ticks()  #Obtains current time in milliseconds
         expired_powerups = []
 
         for powerup_type, end_time in self.active_powerups.items():
@@ -311,7 +325,7 @@ class Player:
 
 
 class PowerUp:
-    def __init__(self, x: float, y: float):
+    def __init__(self, x: float, y: float):     #Initializes the  power-up's
         self.x = x
         self.y = y
         self.radius = POWERUP_SIZE
@@ -346,7 +360,7 @@ class PowerUp:
             pygame.draw.circle(self.glow_surface, (*self.color, alpha),
                                (self.glow_radius, self.glow_radius), size)
 
-    def draw(self, screen):
+    def draw(self, screen): #Generates the power-ups on the game screen
         screen.blit(self.glow_surface,
                     (self.x - self.glow_radius, self.y - self.glow_radius))
         screen.blit(self.base_surface,
