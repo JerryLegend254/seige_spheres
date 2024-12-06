@@ -902,24 +902,60 @@ class Game:
         pygame.display.flip()
 
     def end_game(self):
-        # Logic to end the game or transition to another screen
-        self.game_state = 'game_over'  # Set game state to game over
+        # Compare scores to determine the winner
+        if self.player1.score > self.player2.score:
+            winner = "Green"
+        elif self.player2.score > self.player1.score:
+            winner = "Red"
+        else:
+            winner = "It's a Tie!"  # If scores are equal, it's a tie
 
-        # Display a "Game Over" message
+        # Set the game state to 'game_over'
+        self.game_state = 'game_over'
+
+        # Display the winner message
         font = pygame.font.Font(None, 72)
-        game_over_text = font.render("Game Over!", True, RED)
-        game_over_rect = game_over_text.get_rect(center=(WINDOW_WIDTH // 2, WINDOW_HEIGHT // 2))
-        self.screen.blit(game_over_text, game_over_rect)
+        winner_text = font.render(f"{winner} Wins!", True, YELLOW)
+        winner_rect = winner_text.get_rect(center=(WINDOW_WIDTH // 2, WINDOW_HEIGHT // 2 - 50))
+        self.screen.blit(winner_text, winner_rect)
+
+        # Display options to restart or go to the main menu
+        option_font = pygame.font.Font(None, 48)
+        option_text = option_font.render("Press M for Main Menu or R to Restart", True, GREEN)
+        option_rect = option_text.get_rect(center=(WINDOW_WIDTH // 2, WINDOW_HEIGHT // 2 + 100))
+        self.screen.blit(option_text, option_rect)
 
         pygame.display.flip()  # Update the display
 
-        pygame.time.wait(2000)  # Wait for 2 seconds before transitioning to the next state
-        self.reset_game()  # Reset the game if needed (e.g., return to menu or restart)
+        # Wait for input to go to main menu or restart the game
+        self.wait_for_restart_or_menu()
+
+    def wait_for_restart_or_menu(self):
+        waiting = True
+        while waiting:
+            for event in pygame.event.get():
+                if event.type == pygame.QUIT:
+                    pygame.quit()
+                    quit()
+
+                if event.type == pygame.KEYDOWN:
+                    if event.key == pygame.K_m:  # Go to main menu
+                        self.game_state = 'menu'
+                        waiting = False
+                    elif event.key == pygame.K_r:  # Restart the game
+                        self.reset_game()  # Call reset_game to restart the game
+                        waiting = False
 
     def reset_game(self):
-        self.start_time = pygame.time.get_ticks()  # Reset start time
-        self.game_state = 'menu'  # Transition to menu or start a new game
+        self.player1.score = 0
+        self.player2.score = 0
 
+        # Reset game state variables
+        self.start_time = pygame.time.get_ticks()  # Reset start time for timer
+        self.game_duration = 90 * 1000  # 1 minute 30 seconds in milliseconds (90,000 ms)
+        self.time_remaining = self.game_duration  # Reset time remaining
+        self.game_state = 'game'  # Set the game state back to playing
+        self.paused = False  # Ensure the game is not paused when restarting
     def run(self):
         running = True
         while running:
