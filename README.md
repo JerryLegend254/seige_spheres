@@ -10,13 +10,16 @@ A modern twist on the classic air hockey game, featuring glowing visual effects,
 - **Particle Effects**: Beautiful particle explosions on collisions
 - **Goal Animations**: Exciting visual feedback for scoring
 - **Two-Player Mode**: Local multiplayer support
+- **Play Against AI**: With Varying Difficulty Levels
 
 ### Power-ups
 
--  **Speed Boost**: Increases player movement speed by 50% (5 seconds)
--  **Size Change**: Makes the paddle 50% larger (5 seconds)
--  **Ball Speed**: Increases ball speed by 20% (permanent until goal)
--  **Multi Ball**: Spawns an additional ball
+  - **🟦Speed Boost**: Increases player movement speed by 50% (5 seconds) 
+  - **🟪Size Change**: Makes the paddle 50% larger (5 seconds) 
+  - **🟧Ball Speed**: Increases ball speed by 20% (permanent until goal) 
+  - **🟩Multi Ball**: Spawns an additional ball 
+  - **🟥Freeze Opponent**: The opponent cannot move 
+  - **🟨Double Points**: The next goal earns double points 
 
 ## 🎮 Controls
 
